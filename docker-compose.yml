@@ -1,0 +1,629 @@
+name: isle-dc-production
+services:
+  activemq:
+    deploy:
+      resources:
+        limits:
+          memory: "2147483648"
+        reservations:
+          memory: "1073741824"
+    image: islandora/activemq:main
+    labels:
+      traefik.enable: "false"
+      traefik.http.routers.isle-dc-production-activemq_http.entrypoints: activemq
+      traefik.http.routers.isle-dc-production-activemq_http.service: isle-dc-production-activemq
+      traefik.http.services.isle-dc-production-activemq.loadbalancer.server.port: "8161"
+    networks:
+      default: null
+    restart: unless-stopped
+    secrets:
+      - source: ACTIVEMQ_PASSWORD
+        target: /run/secrets/ACTIVEMQ_PASSWORD
+      - source: ACTIVEMQ_WEB_ADMIN_PASSWORD
+        target: /run/secrets/ACTIVEMQ_WEB_ADMIN_PASSWORD
+    volumes:
+      - type: volume
+        source: activemq-data
+        target: /opt/activemq/data
+        volume: {}
+  alpaca:
+    deploy:
+      resources:
+        limits:
+          memory: "2147483648"
+        reservations:
+          memory: "1073741824"
+    environment:
+      ALPACA_FITS_TIMEOUT: "300000"
+      ALPACA_HOMARUS_TIMEOUT: "300000"
+      ALPACA_HOUDINI_TIMEOUT: "300000"
+      ALPACA_OCR_TIMEOUT: "300000"
+    image: islandora/alpaca:main
+    networks:
+      default: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+      - source: ALPACA_ACTIVEMQ_PASSWORD
+        target: /run/secrets/ALPACA_ACTIVEMQ_PASSWORD
+      - source: ALPACA_KARAF_ADMIN_PASSWORD
+        target: /run/secrets/ALPACA_KARAF_ADMIN_PASSWORD
+  blazegraph:
+    deploy:
+      resources:
+        limits:
+          memory: "5368709120"
+        reservations:
+          memory: "2147483648"
+    image: islandora/blazegraph:main
+    labels:
+      traefik.enable: "false"
+      traefik.http.routers.isle-dc-production-blazegraph_http.entrypoints: blazegraph
+      traefik.http.routers.isle-dc-production-blazegraph_http.service: isle-dc-production-blazegraph
+      traefik.http.services.isle-dc-production-blazegraph.loadbalancer.server.port: "8080"
+    networks:
+      default: null
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: blazegraph-data
+        target: /data
+        volume: {}
+  cantaloupe:
+    deploy:
+      resources:
+        limits:
+          memory: "5368709120"
+        reservations:
+          memory: "1073741824"
+    environment:
+      CANTALOUPE_DELEGATE_SCRIPT_ENABLED: "false"
+      CANTALOUPE_DELEGATE_SCRIPT_PATHNAME: /opt/tomcat/bin/delegates.rb
+      CANTALOUPE_HTTPSOURCE_LOOKUP_STRATEGY: BasicLookupStrategy
+    image: islandora/cantaloupe:main
+    labels:
+      traefik.enable: "true"
+      traefik.http.middlewares.cantaloupe-compress.compress: "true"
+      traefik.http.middlewares.cantaloupe-custom-request-headers.headers.customrequestheaders.X-Forwarded-Path: /cantaloupe
+      traefik.http.middlewares.cantaloupe-redirectscheme.redirectscheme.permanent: "true"
+      traefik.http.middlewares.cantaloupe-redirectscheme.redirectscheme.scheme: https
+      traefik.http.middlewares.cantaloupe-strip-prefix.stripprefix.prefixes: /cantaloupe
+      traefik.http.middlewares.cantaloupe.chain.middlewares: cantaloupe-strip-prefix,cantaloupe-custom-request-headers,cantaloupe-compress
+      traefik.http.routers.isle-dc-production-cantaloupe_http.entrypoints: http
+      traefik.http.routers.isle-dc-production-cantaloupe_http.middlewares: cantaloupe-redirectscheme
+      traefik.http.routers.isle-dc-production-cantaloupe_http.rule: Host(`library.cwis.org`) && PathPrefix(`/cantaloupe`)
+      traefik.http.routers.isle-dc-production-cantaloupe_http.service: isle-dc-production-cantaloupe
+      traefik.http.routers.isle-dc-production-cantaloupe_https.entrypoints: https
+      traefik.http.routers.isle-dc-production-cantaloupe_https.middlewares: cantaloupe
+      traefik.http.routers.isle-dc-production-cantaloupe_https.rule: Host(`library.cwis.org`) && PathPrefix(`/cantaloupe`)
+      traefik.http.routers.isle-dc-production-cantaloupe_https.tls: "true"
+      traefik.http.routers.isle-dc-production-cantaloupe_https.tls.certresolver: myresolver
+      traefik.http.services.isle-dc-production-cantaloupe.loadbalancer.server.port: "8182"
+    networks:
+      default: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+      - source: TOMCAT_ADMIN_PASSWORD
+        target: /run/secrets/TOMCAT_ADMIN_PASSWORD
+    volumes:
+      - type: volume
+        source: cantaloupe-data
+        target: /data
+        volume: {}
+  crayfits:
+    depends_on:
+      fits:
+        condition: service_started
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: "1073741824"
+        reservations:
+          memory: "536870912"
+    image: islandora/crayfits:main
+    networks:
+      default: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+  drupal:
+    depends_on:
+      mariadb:
+        condition: service_started
+        required: true
+      postfix:
+        condition: service_started
+        required: true
+      traefik:
+        condition: service_started
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: "5368709120"
+        reservations:
+          memory: "268435456"
+    environment:
+      DRUPAL_DEFAULT_BROKER_URL: tcp://activemq:61613
+      DRUPAL_DEFAULT_CANTALOUPE_URL: https://library.cwis.org/cantaloupe/iiif/2
+      DRUPAL_DEFAULT_CONFIGDIR: /var/www/drupal/config/sync
+      DRUPAL_DEFAULT_DB_DRIVER: mysql
+      DRUPAL_DEFAULT_DB_HOST: mariadb
+      DRUPAL_DEFAULT_DB_PORT: "3306"
+      DRUPAL_DEFAULT_FCREPO_URL: https://library.cwis.org/fcrepo/rest/
+      DRUPAL_DEFAULT_INSTALL_EXISTING_CONFIG: "true"
+      DRUPAL_DEFAULT_PROFILE: minimal
+      DRUPAL_DEFAULT_SITE_URL: library.cwis.org
+      DRUPAL_SMTP_HOST: postfix
+      DRUPAL_SMTP_PORT: "25"
+      DRUSH_OPTIONS_URI: library.cwis.org
+      NGINX_FASTCGI_CONNECT_TIMEOUT: 300s
+      NGINX_FASTCGI_READ_TIMEOUT: 300s
+      NGINX_FASTCGI_SEND_TIMEOUT: 300s
+      NGINX_KEEPALIVE_TIMEOUT: 300s
+      NGINX_PROXY_CONNECT_TIMEOUT: 300s
+      NGINX_PROXY_READ_TIMEOUT: 300s
+      NGINX_PROXY_SEND_TIMEOUT: 300s
+      NGINX_SEND_TIMEOUT: 300s
+      PHP_DEFAULT_SOCKET_TIMEOUT: "300"
+      PHP_MAX_EXECUTION_TIME: "300"
+      PHP_MAX_INPUT_TIME: "300"
+      PHP_MEMORY_LIMIT: 256M
+      PHP_POST_MAX_SIZE: 128M
+      PHP_PROCESS_CONTROL_TIMEOUT: "300"
+      PHP_REQUEST_TERMINATE_TIMEOUT: "300"
+      PHP_UPLOAD_MAX_FILESIZE: 128M
+    extra_hosts:
+      - host.docker.internal=host-gateway
+    image: local/isle-dc-production_drupal:latest
+    labels:
+      traefik.enable: "true"
+      traefik.http.middlewares.drupal-compress.compress: "true"
+      traefik.http.middlewares.drupal-redirectscheme.redirectscheme.permanent: "true"
+      traefik.http.middlewares.drupal-redirectscheme.redirectscheme.scheme: https
+      traefik.http.routers.isle-dc-production-drupal_http.entrypoints: http
+      traefik.http.routers.isle-dc-production-drupal_http.middlewares: drupal-redirectscheme
+      traefik.http.routers.isle-dc-production-drupal_http.rule: Host(`library.cwis.org`)
+      traefik.http.routers.isle-dc-production-drupal_http.service: isle-dc-production-drupal
+      traefik.http.routers.isle-dc-production-drupal_https.entrypoints: https
+      traefik.http.routers.isle-dc-production-drupal_https.middlewares: drupal-compress
+      traefik.http.routers.isle-dc-production-drupal_https.rule: Host(`library.cwis.org`)
+      traefik.http.routers.isle-dc-production-drupal_https.tls: "true"
+      traefik.http.routers.isle-dc-production-drupal_https.tls.certresolver: myresolver
+      traefik.http.services.isle-dc-production-drupal.loadbalancer.server.port: "80"
+    networks:
+      default: null
+      gateway: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+      - source: DB_ROOT_PASSWORD
+        target: /run/secrets/DB_ROOT_PASSWORD
+      - source: DRUPAL_DEFAULT_ACCOUNT_PASSWORD
+        target: /run/secrets/DRUPAL_DEFAULT_ACCOUNT_PASSWORD
+      - source: DRUPAL_DEFAULT_CONFIGDIR
+        target: /run/secrets/DRUPAL_DEFAULT_CONFIGDIR
+      - source: DRUPAL_DEFAULT_DB_PASSWORD
+        target: /run/secrets/DRUPAL_DEFAULT_DB_PASSWORD
+      - source: DRUPAL_DEFAULT_SALT
+        target: /run/secrets/DRUPAL_DEFAULT_SALT
+      - source: JWT_PRIVATE_KEY
+        target: /run/secrets/JWT_PRIVATE_KEY
+      - source: JWT_PUBLIC_KEY
+        target: /run/secrets/JWT_PUBLIC_KEY
+    volumes:
+      - type: volume
+        source: drupal-sites-data
+        target: /var/www/drupal/web/sites/default/files
+        volume: {}
+      - type: volume
+        source: solr-data
+        target: /opt/solr/server/solr
+        volume: {}
+  fcrepo:
+    depends_on:
+      activemq:
+        condition: service_started
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: "5368709120"
+        reservations:
+          memory: "1073741824"
+    environment:
+      FCREPO_ALLOW_EXTERNAL_DRUPALHTTP: http://library.cwis.org/
+      FCREPO_ALLOW_EXTERNAL_DRUPALHTTPS: https://library.cwis.org/
+      FCREPO_DISABLE_SYN: "false"
+      FCREPO_PERSISTENCE_TYPE: mysql
+      FCREPO_TOMCAT_ADMIN_ROLES: manager-gui,fedoraAdmin
+      FCREPO_TOMCAT_ADMIN_USER: admin
+    image: islandora/fcrepo6:main
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.isle-dc-production-fcrepo_http.entrypoints: fcrepo
+      traefik.http.routers.isle-dc-production-fcrepo_http.rule: Host(`library.cwis.org`)
+      traefik.http.routers.isle-dc-production-fcrepo_http.service: isle-dc-production-fcrepo
+      traefik.http.routers.isle-dc-production-fcrepo_https.entrypoints: https
+      traefik.http.routers.isle-dc-production-fcrepo_https.rule: Host(`library.cwis.org`) && PathPrefix(`/fcrepo`)
+      traefik.http.routers.isle-dc-production-fcrepo_https.service: isle-dc-production-fcrepo
+      traefik.http.routers.isle-dc-production-fcrepo_https.tls: "true"
+      traefik.http.services.isle-dc-production-fcrepo.loadbalancer.server.port: "8080"
+    networks:
+      default: null
+      gateway: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+      - source: DB_ROOT_PASSWORD
+        target: /run/secrets/DB_ROOT_PASSWORD
+      - source: FCREPO_DB_PASSWORD
+        target: /run/secrets/FCREPO_DB_PASSWORD
+      - source: JWT_ADMIN_TOKEN
+        target: /run/secrets/JWT_ADMIN_TOKEN
+      - source: JWT_PUBLIC_KEY
+        target: /run/secrets/JWT_PUBLIC_KEY
+    volumes:
+      - type: volume
+        source: fcrepo-data
+        target: /data
+        volume: {}
+  fits:
+    deploy:
+      resources:
+        limits:
+          memory: "5368709120"
+        reservations:
+          memory: "1048576000"
+    image: islandora/fits:main
+    networks:
+      default: null
+    restart: unless-stopped
+  homarus:
+    deploy:
+      resources:
+        limits:
+          memory: "1073741824"
+        reservations:
+          memory: "536870912"
+    image: islandora/homarus:main
+    networks:
+      default: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+      - source: JWT_ADMIN_TOKEN
+        target: /run/secrets/JWT_ADMIN_TOKEN
+      - source: JWT_PUBLIC_KEY
+        target: /run/secrets/JWT_PUBLIC_KEY
+  houdini:
+    deploy:
+      resources:
+        limits:
+          memory: "1073741824"
+        reservations:
+          memory: "536870912"
+    image: islandora/houdini:main
+    networks:
+      default: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+      - source: JWT_ADMIN_TOKEN
+        target: /run/secrets/JWT_ADMIN_TOKEN
+      - source: JWT_PUBLIC_KEY
+        target: /run/secrets/JWT_PUBLIC_KEY
+  hypercube:
+    deploy:
+      resources:
+        limits:
+          memory: "536870912"
+        reservations:
+          memory: "268435456"
+    image: islandora/hypercube:main
+    networks:
+      default: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+      - source: JWT_ADMIN_TOKEN
+        target: /run/secrets/JWT_ADMIN_TOKEN
+      - source: JWT_PUBLIC_KEY
+        target: /run/secrets/JWT_PUBLIC_KEY
+  mariadb:
+    deploy:
+      resources:
+        limits:
+          memory: "1073741824"
+        reservations:
+          memory: "536870912"
+    image: islandora/mariadb:main
+    labels:
+      traefik.enable: "false"
+      traefik.tcp.routers.isle-dc-production-mysql_tcp.entrypoints: mysql
+      traefik.tcp.routers.isle-dc-production-mysql_tcp.rule: HostSNI(`*`)
+      traefik.tcp.routers.isle-dc-production-mysql_tcp.service: isle-dc-production-mysql
+      traefik.tcp.services.isle-dc-production-mysql.loadbalancer.server.port: "3306"
+    networks:
+      default: null
+    restart: unless-stopped
+    secrets:
+      - source: DB_ROOT_PASSWORD
+        target: /run/secrets/DB_ROOT_PASSWORD
+    volumes:
+      - type: volume
+        source: mariadb-data
+        target: /var/lib/mysql
+        volume: {}
+      - type: volume
+        source: mariadb-files
+        target: /var/lib/mysql-files
+        volume: {}
+  milliner:
+    deploy:
+      resources:
+        limits:
+          memory: "1073741824"
+        reservations:
+          memory: "536870912"
+    environment:
+      MILLINER_FEDORA6: "true"
+    image: islandora/milliner:main
+    networks:
+      default: null
+      gateway: null
+    restart: unless-stopped
+    secrets:
+      - source: CERT_PUBLIC_KEY
+        target: /run/secrets/CERT_PUBLIC_KEY
+      - source: CERT_AUTHORITY
+        target: /run/secrets/CERT_AUTHORITY
+      - source: JWT_ADMIN_TOKEN
+        target: /run/secrets/JWT_ADMIN_TOKEN
+      - source: JWT_PUBLIC_KEY
+        target: /run/secrets/JWT_PUBLIC_KEY
+  postfix:
+    deploy:
+      resources:
+        limits:
+          memory: "268435456"
+        reservations:
+          memory: "67108864"
+    environment:
+      ALLOWED_SENDER_DOMAINS: ${MAIL_ALLOWED_DOMAINS:-localhost,library.cwis.org}
+      RELAYHOST: ${MAIL_RELAYHOST:-}
+      RELAYHOST_PASSWORD: ${MAIL_RELAYHOST_PASSWORD:-}
+      RELAYHOST_USERNAME: ${MAIL_RELAYHOST_USERNAME:-}
+    hostname: postfix
+    image: boky/postfix:latest
+    networks:
+      default: null
+    restart: unless-stopped
+  solr:
+    deploy:
+      resources:
+        limits:
+          memory: "8589934592"
+        reservations:
+          memory: "6442450944"
+    image: islandora/solr:main
+    labels:
+      traefik.enable: "false"
+      traefik.http.routers.isle-dc-production-solr_http.entrypoints: solr
+      traefik.http.routers.isle-dc-production-solr_http.service: isle-dc-production-solr
+      traefik.http.services.isle-dc-production-solr.loadbalancer.server.port: "8983"
+    networks:
+      default: null
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: solr-data
+        target: /opt/solr/server/solr
+        volume: {}
+  traefik:
+    command:
+      - --api.insecure=false
+      - --api.dashboard=false
+      - --api.debug=false
+      - --entryPoints.http.address=:80
+      - --entryPoints.https.address=:443
+      - --entryPoints.mysql.address=:3306
+      - --entryPoints.postgresql.address=:5432
+      - --entryPoints.fcrepo.address=:8081
+      - --entryPoints.fcrepo.transport.respondingTimeouts.readTimeout=300
+      - --entryPoints.fcrepo.transport.respondingTimeouts.writeTimeout=300
+      - --entryPoints.blazegraph.address=:8082
+      - --entryPoints.activemq.address=:8161
+      - --entryPoints.solr.address=:8983
+      - --log.level=INFO
+      - --providers.docker
+      - --providers.docker.network=gateway
+      - --providers.docker.exposedByDefault=false
+      - --providers.file.filename=/etc/traefik/tls.yml
+      - --providers.docker.defaultRule=Host(`library.cwis.org`)
+      - --certificatesresolvers.myresolver.acme.httpchallenge=true
+      - --certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=http
+      - --certificatesresolvers.myresolver.acme.email=sam@cwis.org
+      - --certificatesresolvers.myresolver.acme.keyType=EC256
+      - --certificatesresolvers.myresolver.acme.storage=/acme/acme.json
+      - --certificatesResolvers.myresolver.acme.caServer=https://acme-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.myresolver.acme.certificatesduration=2160
+      - --certificatesresolvers.myresolver.acme.eab.kid=
+      - --certificatesresolvers.myresolver.acme.eab.hmacencoded=
+    container_name: traefik
+    deploy:
+      resources:
+        limits:
+          memory: "8589934592"
+        reservations:
+          memory: "4294967296"
+    image: traefik:v3.4.1@sha256:cd40ab7bc1f047731d5b22595203812343efcb6538014c4e93221cfc3a77217a
+    labels:
+      traefik.http.routers.api.service: api@internal
+    networks:
+      default:
+        aliases:
+          - library.cwis.org
+      gateway: {}
+    ports:
+      - mode: ingress
+        target: 80
+        published: "80"
+        protocol: tcp
+      - mode: ingress
+        target: 443
+        published: "443"
+        protocol: tcp
+      - mode: ingress
+        target: 8081
+        published: "8081"
+        protocol: tcp
+      - mode: ingress
+        target: 3306
+        published: "3306"
+        protocol: tcp
+      - mode: ingress
+        target: 5432
+        published: "5432"
+        protocol: tcp
+      - mode: ingress
+        target: 8080
+        published: "8080"
+        protocol: tcp
+      - mode: ingress
+        target: 8082
+        published: "8082"
+        protocol: tcp
+      - mode: ingress
+        target: 8161
+        published: "8161"
+        protocol: tcp
+      - mode: ingress
+        target: 8983
+        published: "8983"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /root/isle-dc-production/build/traefik-tls.yml
+        target: /etc/traefik/tls.yml
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /root/isle-dc-production/certs
+        target: /etc/ssl/traefik
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /root/isle-dc-production/acme
+        target: /acme
+        bind:
+          create_host_path: true
+networks:
+  default:
+    name: isle-dc-production_default
+    internal: true
+  gateway:
+    name: isle-dc-production_gateway
+    driver: bridge
+volumes:
+  activemq-data:
+    name: isle-dc-production_activemq-data
+  blazegraph-data:
+    name: isle-dc-production_blazegraph-data
+  cantaloupe-data:
+    name: isle-dc-production_cantaloupe-data
+  drupal-sites-data:
+    name: isle-dc-production_drupal-sites-data
+  fcrepo-data:
+    name: isle-dc-production_fcrepo-data
+  mariadb-data:
+    name: isle-dc-production_mariadb-data
+  mariadb-files:
+    name: isle-dc-production_mariadb-files
+  solr-data:
+    name: isle-dc-production_solr-data
+secrets:
+  ACTIVEMQ_PASSWORD:
+    name: isle-dc-production_ACTIVEMQ_PASSWORD
+    file: /root/isle-dc-production/secrets/live/ACTIVEMQ_PASSWORD
+  ACTIVEMQ_WEB_ADMIN_PASSWORD:
+    name: isle-dc-production_ACTIVEMQ_WEB_ADMIN_PASSWORD
+    file: /root/isle-dc-production/secrets/live/ACTIVEMQ_WEB_ADMIN_PASSWORD
+  ALPACA_ACTIVEMQ_PASSWORD:
+    name: isle-dc-production_ALPACA_ACTIVEMQ_PASSWORD
+    file: /root/isle-dc-production/secrets/live/ALPACA_ACTIVEMQ_PASSWORD
+  ALPACA_KARAF_ADMIN_PASSWORD:
+    name: isle-dc-production_ALPACA_KARAF_ADMIN_PASSWORD
+    file: /root/isle-dc-production/secrets/live/ALPACA_KARAF_ADMIN_PASSWORD
+  CERT_AUTHORITY:
+    name: isle-dc-production_CERT_AUTHORITY
+    file: /root/isle-dc-production/certs/rootCA.pem
+  CERT_PUBLIC_KEY:
+    name: isle-dc-production_CERT_PUBLIC_KEY
+    file: /root/isle-dc-production/certs/cert.pem
+  DB_ROOT_PASSWORD:
+    name: isle-dc-production_DB_ROOT_PASSWORD
+    file: /root/isle-dc-production/secrets/live/DB_ROOT_PASSWORD
+  DRUPAL_DEFAULT_ACCOUNT_PASSWORD:
+    name: isle-dc-production_DRUPAL_DEFAULT_ACCOUNT_PASSWORD
+    file: /root/isle-dc-production/secrets/live/DRUPAL_DEFAULT_ACCOUNT_PASSWORD
+  DRUPAL_DEFAULT_CONFIGDIR:
+    name: isle-dc-production_DRUPAL_DEFAULT_CONFIGDIR
+    file: /root/isle-dc-production/secrets/live/DRUPAL_DEFAULT_CONFIGDIR
+  DRUPAL_DEFAULT_DB_PASSWORD:
+    name: isle-dc-production_DRUPAL_DEFAULT_DB_PASSWORD
+    file: /root/isle-dc-production/secrets/live/DRUPAL_DEFAULT_DB_PASSWORD
+  DRUPAL_DEFAULT_SALT:
+    name: isle-dc-production_DRUPAL_DEFAULT_SALT
+    file: /root/isle-dc-production/secrets/live/DRUPAL_DEFAULT_SALT
+  FCREPO_DB_PASSWORD:
+    name: isle-dc-production_FCREPO_DB_PASSWORD
+    file: /root/isle-dc-production/secrets/live/FCREPO_DB_PASSWORD
+  JWT_ADMIN_TOKEN:
+    name: isle-dc-production_JWT_ADMIN_TOKEN
+    file: /root/isle-dc-production/secrets/live/JWT_ADMIN_TOKEN
+  JWT_PRIVATE_KEY:
+    name: isle-dc-production_JWT_PRIVATE_KEY
+    file: /root/isle-dc-production/secrets/live/JWT_PRIVATE_KEY
+  JWT_PUBLIC_KEY:
+    name: isle-dc-production_JWT_PUBLIC_KEY
+    file: /root/isle-dc-production/secrets/live/JWT_PUBLIC_KEY
+  TOMCAT_ADMIN_PASSWORD:
+    name: isle-dc-production_TOMCAT_ADMIN_PASSWORD
+    file: /root/isle-dc-production/secrets/live/TOMCAT_ADMIN_PASSWORD
+x-ca-cert:
+  secrets:
+    - source: CERT_PUBLIC_KEY
+    - source: CERT_AUTHORITY

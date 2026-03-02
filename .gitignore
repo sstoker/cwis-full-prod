@@ -1,0 +1,20 @@
+# Sensitive
+.env
+secrets/
+certs/
+acme/
+*.pem
+*.key
+
+# Large/generated
+codebase/vendor/
+codebase/node_modules/
+codebase/web/sites/default/files/
+backups/
+data/
+*.log
+
+# IDE
+.idea/
+.vscode/
+.github/

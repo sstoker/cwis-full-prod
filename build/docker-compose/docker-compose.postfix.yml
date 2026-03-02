@@ -1,0 +1,36 @@
+# Postfix mail relay for Drupal - best practice for production email delivery.
+# Accepts mail from Drupal and relays to external SMTP (optional).
+# Configure RELAYHOST, RELAYHOST_USERNAME, RELAYHOST_PASSWORD for external relay.
+# Without relay config, Postfix delivers locally (useful for testing).
+networks:
+  default:
+    internal: true
+services:
+  postfix:
+    image: boky/postfix:latest
+    hostname: postfix
+    restart: ${RESTART_POLICY:-unless-stopped}
+    environment:
+      # Allow sending from your domain(s) - comma-separated
+      - ALLOWED_SENDER_DOMAINS=${MAIL_ALLOWED_DOMAINS:-localhost,library.cwis.org}
+      # Optional: relay to external SMTP (e.g. SendGrid, Mailgun)
+      # Set MAIL_RELAYHOST in .env for production (e.g. [smtp.sendgrid.net]:587)
+      - RELAYHOST=${MAIL_RELAYHOST:-}
+      - RELAYHOST_USERNAME=${MAIL_RELAYHOST_USERNAME:-}
+      - RELAYHOST_PASSWORD=${MAIL_RELAYHOST_PASSWORD:-}
+    networks:
+      - default
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+  drupal:
+    depends_on:
+      - ${DRUPAL_DATABASE_SERVICE}
+      - postfix
+    environment:
+      # Symfony Mailer SMTP - Drupal sends to Postfix on port 25
+      DRUPAL_SMTP_HOST: postfix
+      DRUPAL_SMTP_PORT: "25"

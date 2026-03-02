@@ -1,0 +1,12 @@
+name: File replace
+description: 'Allows to replace files'
+type: module
+core_version_requirement: ^10.3 || ^11
+package: Media
+dependencies:
+  - drupal:file
+
+# Information added by Drupal.org packaging script on 2025-05-30
+version: '8.x-1.5'
+project: 'file_replace'
+datestamp: 1748608304

@@ -1,0 +1,60 @@
+# Drupal / Composer
+/vendor/
+/web/vendor/
+/composer.lock.backup
+
+# Drupal core (if managed by Composer)
+# Uncomment if you want to ignore core
+# /web/core/
+
+# Configuration files with sensitive information
+/web/sites/*/settings*.php
+/web/sites/*/services*.yml
+/web/sites/*/settings.local.php
+/web/sites/*/development.services.yml
+
+# User-generated content
+/web/sites/*/files/
+/web/sites/*/private/
+/web/sites/*/translations/
+
+# Temporary files
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Build artifacts
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Test files
+/web/sites/simpletest/
+/phpunit.xml
+
+# Drush files
+.drush/
+
+# Twig cache
+/web/sites/*/files/php/twig/
+
+

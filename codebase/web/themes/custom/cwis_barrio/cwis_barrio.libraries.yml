@@ -1,0 +1,20 @@
+# Load after Bootstrap so custom styles override when needed.
+global-styling:
+  version: VERSION
+  css:
+    component:
+      css/style.css: {}
+  js:
+    js/global.js: {}
+  dependencies:
+    - cwis_barrio/bootstrap
+    - bootstrap_barrio/global-styling
+
+bootstrap:
+  js:
+    /libraries/bootstrap/dist/js/bootstrap.bundle.min.js: { weight: -20 }
+  css:
+    component:
+      /libraries/bootstrap/dist/css/bootstrap.min.css: {}
+  dependencies:
+    - core/popperjs

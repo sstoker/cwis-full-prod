@@ -1,0 +1,7 @@
+name: Islandora IIIF hOCR
+type: module
+description: Adds hOCR data into IIIF manifests.
+package: Islandora
+core_version_requirement: ^9 || ^10
+dependencies:
+  - islandora:islandora_iiif

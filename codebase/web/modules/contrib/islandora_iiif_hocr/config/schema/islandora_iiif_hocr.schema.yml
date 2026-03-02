@@ -1,0 +1,24 @@
+# Schema for the configuration files of the Islandora iiif hocr module.
+islandora_iiif_hocr.settings:
+  type: config_object
+  label: 'Islandora iiif hocr settings'
+  mapping:
+    solr_hocr_paged_content_display:
+      type: string
+      label: 'Paged content IIIF Manifest view/display'
+    solr_hocr_page_display:
+      type: string
+      label: 'Single Page IIIF Manifest view/display'
+    solr_hocr_index:
+      type: string
+      label: 'Solr field with OCR highlight field'
+    solr_hocr_field:
+      type: string
+      label: 'Solr field with OCR highlight'
+views.style.islandora_iiif_hocr_iiif_search_result_annotations:
+  type: views_style
+  label: 'Canvas media use term URI'
+  mapping:
+    canvas_media_term_uri:
+      type: string
+      label: Canvas media use term URI

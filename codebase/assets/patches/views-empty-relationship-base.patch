@@ -1,0 +1,11 @@
+--- a/modules/views/src/Plugin/views/query/QueryPluginBase.php
++++ b/modules/views/src/Plugin/views/query/QueryPluginBase.php
+@@ -298,6 +298,9 @@ public function getEntityTableInfo() {
+ 
+     // Include all relationships.
+     foreach ((array) $this->view->relationship as $relationship_id => $relationship) {
++      if (empty($relationship->definition['base'])) {
++        continue;
++      }
+       $table_data = $views_data->get($relationship->definition['base']);
+       if (isset($table_data['table']['entity type'])) {

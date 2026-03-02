@@ -1,0 +1,5 @@
+services:
+  islandora_iiif_hocr.query_alter:
+    class: Drupal\islandora_iiif_hocr\EventSubscriber\OCRHighlightingSolrQueryAlter
+    tags:
+      - { name: event_subscriber }
