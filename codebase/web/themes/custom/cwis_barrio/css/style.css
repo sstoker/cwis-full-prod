@@ -49,6 +49,68 @@ nav.menu--main .dropdown > .dropdown-menu.show {
   object-fit: contain;
 }
 
+/* Search page (/search): space below the results block */
+.path-search .view-id-solr_search_content,
+.path-search .view-solr-search-content,
+.page-view-solr-search-content-page-1 .view-id-solr_search_content,
+.page-view-solr-search-content-page-1 .view-solr-search-content {
+  margin-bottom: 3em;
+}
+
+/* Taxonomy term pages (/taxonomy/term/*): space above footer (core taxonomy_term view) */
+body[class*="page-taxonomy-term-"] .view-id-taxonomy_term,
+body[class*="page-taxonomy-term-"] .view-taxonomy-term,
+.page-view-taxonomy-term-page-1 .view-id-taxonomy_term,
+.page-view-taxonomy-term-page-1 .view-taxonomy-term {
+  margin-bottom: 5em;
+}
+
+/* Taxonomy term pages only: tighten gap between page title and Solr search results */
+body[class*="page-taxonomy-term-"] .view-id-solr_search_content,
+body[class*="page-taxonomy-term-"] .view-solr-search-content {
+  margin-top: -5em;
+}
+
+/* Listing result titles: spacing only — font size follows theme / Bootstrap h3 (matches Solr + taxonomy teasers). */
+.view-id-solr_search_content .views-field-title h2,
+.view-id-solr_search_content .views-field-title h3,
+.view-solr-search-content .views-field-title h2,
+.view-solr-search-content .views-field-title h3,
+.node--view-mode-teaser.node--type-islandora-object .node__title {
+  margin-top: 0;
+  margin-bottom: 0.35rem;
+}
+
+/*
+ * Islandora repository item (full node): object title is h1.islandora-object-page-title
+ * inside the node template — not Barrio's page-title block (h1.title). Body uses
+ * node--type-islandora-object, not page-node-type-* (see template_preprocess_html).
+ */
+body.path-node.node--type-islandora-object h1.islandora-object-page-title {
+  font-size: calc(1.325rem + 0.9vw);
+  line-height: 1.2;
+}
+
+/* If a display still uses the core page title block */
+body.path-node.node--type-islandora-object h1.title {
+  font-size: calc(1.325rem + 0.9vw);
+  line-height: 1.2;
+}
+
+/* Bold metadata labels (Barrio field.css sets entity-reference labels to normal). */
+body.path-node.node--type-islandora-object
+  article.node--type-islandora-object.node--view-mode-full
+  .field__label:not(.visually-hidden) {
+  font-weight: 700;
+}
+
+/* Repository item pages: space above the title and below the page (incl. attachment blocks). */
+body.path-node.node--type-islandora-object
+  article.node--type-islandora-object.node--view-mode-full {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
 /* /user/login — footer at bottom of viewport, form vertically centered (Barrio: .page-user-login). */
 body.page-user-login #page-wrapper {
   min-height: 100vh;
