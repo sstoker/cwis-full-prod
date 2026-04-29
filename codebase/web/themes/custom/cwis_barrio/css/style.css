@@ -48,3 +48,79 @@ nav.menu--main .dropdown > .dropdown-menu.show {
   height: auto;
   object-fit: contain;
 }
+
+/* /user/login — footer at bottom of viewport, form vertically centered (Barrio: .page-user-login). */
+body.page-user-login #page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.page-user-login #page-wrapper #page {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+body.page-user-login #main-wrapper {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+body.page-user-login #main-wrapper #main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+body.page-user-login #main-wrapper #main > .row.cwis-login-row {
+  flex: 1 1 auto;
+  align-items: stretch;
+  min-height: 0;
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+}
+
+body.page-user-login #main-wrapper #main main.cwis-login-main-column {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-width: 100%;
+}
+
+body.page-user-login .cwis-login-section {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding-top: 1em;
+}
+
+body.page-user-login .cwis-login-page-title {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+body.page-user-login .cwis-login-form-shell {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5em;
+  width: 100%;
+}
+
+body.page-user-login .cwis-login-form-shell > * {
+  width: 100%;
+  max-width: 26rem;
+}
