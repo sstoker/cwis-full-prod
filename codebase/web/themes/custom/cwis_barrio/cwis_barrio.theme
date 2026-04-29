@@ -8,6 +8,32 @@
 use Drupal\Core\Form\FormStateInterface;
 
 /**
+ * Implements hook_form_alter().
+ */
+function cwis_barrio_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  if ($form_id === 'user_login_form') {
+    $form['#submit'][] = 'cwis_barrio_user_login_redirect_front';
+  }
+}
+
+/**
+ * Submit handler: redirect to home after login (skip profile "Member for" page).
+ *
+ * Core defaults to entity.user.canonical when no destination is provided.
+ * Preserves normal behavior when a destination query/POST is set (e.g. Access denied).
+ */
+function cwis_barrio_user_login_redirect_front(array &$form, FormStateInterface $form_state) {
+  if (empty($form_state->get('uid'))) {
+    return;
+  }
+  $request = \Drupal::request();
+  if ($request->request->has('destination') || $request->query->has('destination')) {
+    return;
+  }
+  $form_state->setRedirect('<front>');
+}
+
+/**
  * Implements hook_form_system_theme_settings_alter().
  */
 function cwis_barrio_form_system_theme_settings_alter(&$form, FormStateInterface $form_state, $form_id = NULL) {
