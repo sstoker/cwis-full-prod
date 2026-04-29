@@ -1,1 +1,50 @@
 /* CWIS Barrio custom styles - add your overrides here */
+
+/* Nav menu dropdowns: show on hover (desktop) and when .show is added (click) */
+.navbar .dropdown:hover > .dropdown-menu,
+.navbar .dropdown > .dropdown-menu.show,
+.navbar-collapse .dropdown:hover > .dropdown-menu,
+.navbar-collapse .dropdown > .dropdown-menu.show,
+.offcanvas .dropdown:hover > .dropdown-menu,
+.offcanvas .dropdown > .dropdown-menu.show,
+nav.menu--main .dropdown:hover > .dropdown-menu,
+nav.menu--main .dropdown > .dropdown-menu.show {
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Mobile: dropdowns open on tap (JS adds .show) */
+@media (max-width: 767px) {
+  .navbar .dropdown-menu.show,
+  .navbar-collapse .dropdown-menu.show,
+  .offcanvas .dropdown-menu.show,
+  nav.menu--main .dropdown-menu.show,
+  #CollapsingNavbar .dropdown-menu.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  /* Ensure offcanvas doesn't clip dropdown menus - use static flow */
+  .offcanvas .dropdown-menu.show,
+  #CollapsingNavbar.offcanvas .dropdown-menu.show {
+    position: static !important;
+    float: none !important;
+    box-shadow: none;
+    border-left: 3px solid rgba(0, 0, 0, 0.15);
+    margin-left: 1rem;
+  }
+  /* Allow dropdown to extend beyond scroll container */
+  .offcanvas-body:has(.dropdown-menu.show) {
+    overflow: visible !important;
+  }
+}
+
+/* Solr search results (solr_search_content view): constrain discovery / thumbnail images */
+.view-id-solr_search_content img,
+.view-solr-search-content img {
+  max-width: 500px;
+  max-height: 600px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
